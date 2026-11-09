@@ -8,3 +8,6 @@
 
 # Generador de dataset
 generar_dataset.py
+
+# Dataset
+ventas_125052910.csv
