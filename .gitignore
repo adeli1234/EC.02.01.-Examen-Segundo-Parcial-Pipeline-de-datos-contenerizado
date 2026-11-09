@@ -4,3 +4,7 @@
 
 # Archivo de variables de entorno
 .env
+
+
+# Generador de dataset
+generar_dataset.py
