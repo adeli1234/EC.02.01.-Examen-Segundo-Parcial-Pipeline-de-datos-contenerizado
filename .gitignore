@@ -1,2 +1,6 @@
+# Entorno virtual
 .venv
 /.venv/
+
+# Archivo de variables de entorno
+.env
