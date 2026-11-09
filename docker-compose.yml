@@ -1,33 +1,66 @@
-FROM debian:bookworm-slim
+version: '3.8'
 
-ENV DEBIAN_FRONTEND=noninteractive
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-ENV HADOOP_VERSION=3.3.6
-ENV HADOOP_HOME=/opt/hadoop
-ENV PATH=$PATH:$JAVA_HOME/bin:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+services:
+  db:
+    image: mysql:8.0
+    container_name: db
+    restart: always
+    env_file:
+      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - datamart_net
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
+  hadoop:
+    build:
+      context: ./hadoop
+    container_name: hadoop
+    restart: always
+    volumes:
+      - ./:/data/input:ro
+      - hadoop_output:/data/output
+      - ./mapreduce:/mapreduce
+    networks:
+      - datamart_net
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk-headless \
-    python3 \
-    python-is-python3 \
-    python3-pip \
-    wget \
-    curl \
-    openssh-server \
-    openssh-client \
-    procps \
-    && rm -rf /var/lib/apt-get/lists/*
+  api:
+    build:
+      context: ./api
+    container_name: api
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+    volumes:
+      - hadoop_output:/data/output:ro
+      - ./scripts:/scripts
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - datamart_net
 
+volumes:
+  mysql_data:
+  hadoop_output:
 
-RUN wget -q https://downloads.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz && \
-    tar -xzf hadoop-${HADOOP_VERSION}.tar.gz -C /opt/ && \
-    mv /opt/hadoop-${HADOOP_VERSION} ${HADOOP_HOME} && \
-    rm hadoop-${HADOOP_VERSION}.tar.gz
-
-
-RUN echo "export JAVA_HOME=${JAVA_HOME}" >> ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
-
-WORKDIR /root
-
-CMD ["tail", "-f", "/dev/null"]
+networks:
+  datamart_net:
+    driver: bridge
