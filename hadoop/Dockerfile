@@ -35,8 +35,9 @@ RUN cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys && \
     chmod 600 /root/.ssh/authorized_keys /root/.ssh/id_rsa && \
     echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
 
+# Copiar y limpiar saltos de línea estilo Windows (\r)
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN sed -i -e 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 WORKDIR /root
 

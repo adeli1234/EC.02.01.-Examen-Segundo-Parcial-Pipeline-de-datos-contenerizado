@@ -25,3 +25,4 @@ for line in sys.stdin:
 
 if current_categoria is not None:
     print(f"{current_categoria}\t{total_acumulado:.2f}")
+    
