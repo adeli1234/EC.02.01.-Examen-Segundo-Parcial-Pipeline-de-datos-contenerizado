@@ -11,6 +11,7 @@ generar_dataset.py
 
 # Dataset
 ventas_125052910.csv
+*.csv
 
 #Llaves de SSH
 hadoop/id_rsa
