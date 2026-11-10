@@ -6,9 +6,9 @@ ENV HADOOP_VERSION=3.3.6
 ENV HADOOP_HOME=/opt/hadoop
 ENV PATH=$PATH:$JAVA_HOME/bin:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
 
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openjdk-17-jdk-headless \
+    python3 \
     python-is-python3 \
     python3-pip \
     wget \
@@ -18,15 +18,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     procps \
     && rm -rf /var/lib/apt-get/lists/*
 
-
+# Descarga e instalación de Hadoop Standalone
 RUN wget -q https://downloads.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz && \
     tar -xzf hadoop-${HADOOP_VERSION}.tar.gz -C /opt/ && \
     mv /opt/hadoop-${HADOOP_VERSION} ${HADOOP_HOME} && \
     rm hadoop-${HADOOP_VERSION}.tar.gz
 
-
 RUN echo "export JAVA_HOME=${JAVA_HOME}" >> ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
+
+# Configurar OpenSSH Server y llaves autorizadas
+RUN mkdir -p /var/run/sshd /root/.ssh
+COPY id_rsa /root/.ssh/id_rsa
+COPY id_rsa.pub /root/.ssh/id_rsa.pub
+RUN cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys && \
+    chmod 700 /root/.ssh && \
+    chmod 600 /root/.ssh/authorized_keys /root/.ssh/id_rsa && \
+    echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 WORKDIR /root
 
-CMD ["tail", "-f", "/dev/null"]
+ENTRYPOINT ["/entrypoint.sh"]
