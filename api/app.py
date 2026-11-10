@@ -1,69 +1,48 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
 import mysql.connector
 import os
 
-app = FastAPI(title="DataMart Analytics API")
+app = FastAPI()
 
 def get_db_connection():
     return mysql.connector.connect(
         host=os.getenv("MYSQL_HOST", "db"),
-        port=int(os.getenv("MYSQL_PORT", 3306)),
         user="root",
-        password=os.getenv("MYSQL_ROOT_PASSWORD"),
-        database=os.getenv("MYSQL_DATABASE")
+        password=os.getenv("MYSQL_ROOT_PASSWORD", "rootpassword"),
+        database=os.getenv("MYSQL_DATABASE", "datamart")
     )
 
-class ResultadoSchema(BaseModel):
-    categoria: str
-    total_ventas: float
-
 @app.get("/resultados")
-def obtener_todos():
+def get_todos_los_resultados():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT categoria, total_ventas, fecha_actualizacion FROM resultados_ventas ORDER BY total_ventas DESC;")
-    registros = cursor.fetchall()
+    cursor.execute("SELECT * FROM resumen_ventas")
+    filas = cursor.fetchall()
     cursor.close()
     conn.close()
-    return registros
+    return filas
 
 @app.get("/resultados/{categoria}")
-def obtener_por_categoria(categoria: str):
+def get_resultado_por_categoria(categoria: str):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT categoria, total_ventas, fecha_actualizacion FROM resultados_ventas WHERE LOWER(categoria) = LOWER(%s);", (categoria,))
-    registro = cursor.fetchone()
+    cursor.execute("SELECT * FROM resumen_ventas WHERE categoria = %s", (categoria,))
+    fila = cursor.fetchone()
     cursor.close()
     conn.close()
-    if not registro:
+    if not fila:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
-    return registro
-
-@app.post("/resultados", status_code=201)
-def crear_o_actualizar(data: ResultadoSchema):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    query = """
-        INSERT INTO resultados_ventas (categoria, total_ventas)
-        VALUES (%s, %s)
-        ON DUPLICATE KEY UPDATE total_ventas = VALUES(total_ventas), fecha_actualizacion = CURRENT_TIMESTAMP;
-    """
-    cursor.execute(query, (data.categoria, data.total_ventas))
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return {"status": "ok", "categoria": data.categoria, "total_ventas": data.total_ventas}
+    return fila
 
 @app.delete("/resultados/{categoria}")
-def eliminar(categoria: str):
+def eliminar_categoria(categoria: str):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM resultados_ventas WHERE LOWER(categoria) = LOWER(%s);", (categoria,))
-    affected = cursor.rowcount
+    cursor.execute("DELETE FROM resumen_ventas WHERE categoria = %s", (categoria,))
     conn.commit()
+    afectados = cursor.rowcount
     cursor.close()
     conn.close()
-    if affected == 0:
-        raise HTTPException(status_code=404, detail="Categoría no encontrada")
-    return {"status": "eliminado", "categoria": categoria}
+    if afectados == 0:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada para eliminar")
+    return {"mensaje": f"Categoría '{categoria}' eliminada correctamente"}
