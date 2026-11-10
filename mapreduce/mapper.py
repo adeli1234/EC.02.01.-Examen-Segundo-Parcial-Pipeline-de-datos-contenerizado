@@ -22,7 +22,7 @@ for line in sys.stdin:
         total_venta = cantidad * precio_unitario
         
         if categoria:
-            print(f"{categoria}\t{total_venta:.2f}")
+            print(f"{categoria}\t{total_venta}\t1")
     except (ValueError, IndexError):
         # Manejo defensivo: ignora líneas mal formadas sin truncar el job
         continue
