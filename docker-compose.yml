@@ -2,22 +2,20 @@ version: '3.8'
 
 services:
   db:
-    image: mysql:8.0
-    container_name: db
-    restart: always
-    env_file:
+    image: mysql:8.0 # La imagen de MySQL que se usa
+    container_name: db # Nombre del contenedor
+    restart: always # En caso de que se caiga el contenedor, se reiniciará automáticamente
+    env_file: # Conexión con el archivo .env para obttener las variables de entorno
       - .env
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    environment: # Carga las variables de entorno
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD} # La contraseña del usuario root de MySQL
+      MYSQL_DATABASE: ${MYSQL_DATABASE} # La base de datos que se creará al iniciar el contenedor
     ports:
-      - "3306:3306"
+      - "3306:3306" # Se conecta Mysql al puerto 3306 del host
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql # Se crea un volumen para persistir los datos de MySQL
     networks:
-      - datamart_net
+      - datamart_net # Se conecta a la red definida como datamart_netpara que los otros contenedores puedan conectarse a la base de datos
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
@@ -30,9 +28,9 @@ services:
     container_name: hadoop
     restart: always
     volumes:
-      - ./:/data/input:ro
-      - hadoop_output:/data/output
-      - ./mapreduce:/mapreduce
+      - ./:/data/input:ro # Monta el proyecto en el contenedor, pero en modo solo lectura
+      - hadoop_output:/data/output # Monta el volumen hadoop_output en el contenedor para almacenar los resultados del procesamiento de datos
+      - ./mapreduce:/mapreduce # Monta el directorio mapreduce en el contenedor para ejecutar los scripts de MapReduce
     networks:
       - datamart_net
 
@@ -46,21 +44,21 @@ services:
     env_file:
       - .env
     environment:
-      MYSQL_HOST: db
-      MYSQL_PORT: 3306
+      MYSQL_HOST: ${MYSQL_HOST}
+      MYSQL_PORT: ${MYSQL_PORT}
     volumes:
-      - hadoop_output:/data/output:ro
-      - ./scripts:/scripts
+      - hadoop_output:/data/output:ro # Monta el volumen hadoop_output en el contenedor para que la API pueda acceder a los resultados del procesamiento de datos
+      - ./scripts:/scripts # Monta el directorio scripts en el contenedor para ejecutar los scripts de carga de datos
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_healthy # Solo empezará cuando la base de datos este "healthy"
     networks:
       - datamart_net
 
 volumes:
-  mysql_data:
-  hadoop_output:
+  mysql_data: # Volumen para persistir los datos de MySQL
+  hadoop_output: # Volumen para almacenar los resultados del procesamiento de datos
 
 networks:
   datamart_net:
-    driver: bridge
+    driver: bridge # Se crea una red de tipo bridge para que los contenedores puedan comunicarse entre sí
