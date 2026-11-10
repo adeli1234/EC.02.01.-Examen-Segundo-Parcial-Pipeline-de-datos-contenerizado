@@ -18,11 +18,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     procps \
     && rm -rf /var/lib/apt-get/lists/*
 
-# Descarga e instalación de Hadoop Standalone
-RUN wget -q https://downloads.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz && \
-    tar -xzf hadoop-${HADOOP_VERSION}.tar.gz -C /opt/ && \
-    mv /opt/hadoop-${HADOOP_VERSION} ${HADOOP_HOME} && \
-    rm hadoop-${HADOOP_VERSION}.tar.gz
+# Descarga e instalación rápida de Hadoop 3.3.6
+RUN wget -q https://archive.apache.org/dist/hadoop/common/hadoop-3.3.6/hadoop-3.3.6.tar.gz && \
+    tar -xzf hadoop-3.3.6.tar.gz -C /opt/ && \
+    mv /opt/hadoop-3.3.6 ${HADOOP_HOME} && \
+    rm hadoop-3.3.6.tar.gz
 
 RUN echo "export JAVA_HOME=${JAVA_HOME}" >> ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
 
