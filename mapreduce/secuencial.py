@@ -1,26 +1,27 @@
-#!/usr/bin/env python3
 import sys
 import time
 import pandas as pd
 
 def procesar_secuencial(filepath):
-    start_time = time.time()
+    inicio = time.time()
     
+    # Leer CSV omitiendo líneas corruptas
     df = pd.read_csv(filepath, on_bad_lines='skip')
+    
+    # Limpieza de tipos de datos
     df['cantidad'] = pd.to_numeric(df['cantidad'], errors='coerce')
     df['precio_unitario'] = pd.to_numeric(df['precio_unitario'], errors='coerce')
     df = df.dropna(subset=['categoria', 'cantidad', 'precio_unitario'])
     
+    # Cálculo y agrupación
     df['total_venta'] = df['cantidad'] * df['precio_unitario']
     resultado = df.groupby('categoria')['total_venta'].sum().round(2)
     
-    end_time = time.time()
-    print("=== RESULTADO SECUENCIAL (PANDAS) ===")
+    fin = time.time()
+    print(f"--- Resultados Secuenciales (Pandas) ---")
     print(resultado)
-    print(f"\nTiempo de ejecución: {end_time - start_time:.4f} segundos")
+    print(f"\nTiempo de ejecución: {fin - inicio:.4f} segundos")
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Uso: python3 secuencial.py <ruta_csv>")
-        sys.exit(1)
-    procesar_secuencial(sys.argv[1])
+    archivo = sys.argv[1] if len(sys.argv) > 1 else "/data/input/ventas.csv"
+    procesar_secuencial(archivo)
