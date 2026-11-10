@@ -1,39 +1,29 @@
 #!/usr/bin/env python3
 import sys
 
-current_categoria = None
-total_acumulado = 0.0
-conteo_total = 0
-
 for line in sys.stdin:
     line = line.strip()
     if not line:
         continue
     
-    try:
-        # Se esperan 3 columnas emitidas por el mapper: categoria, monto, conteo
-        partes = line.split("\t")
-        if len(partes) < 3:
-            continue
-            
-        categoria = partes[0]
-        monto = float(partes[1])
-        conteo = int(partes[2])
-    except ValueError:
+    # Omitir encabezado CSV (insensible a mayúsculas/minúsculas)
+    if line.lower().startswith("id,"):
         continue
-
-    if current_categoria == categoria:
-        total_acumulado += monto
-        conteo_total += conteo
-    else:
-        if current_categoria is not None and conteo_total > 0:
-            promedio = total_acumulado / conteo_total
-            print(f"{current_categoria}\t{promedio:.2f}")
-        current_categoria = categoria
-        total_acumulado = monto
-        conteo_total = conteo
-
-# Imprimir la última categoría procesada
-if current_categoria is not None and conteo_total > 0:
-    promedio = total_acumulado / conteo_total
-    print(f"{current_categoria}\t{promedio:.2f}")
+    
+    parts = line.split(",")
+    if len(parts) < 8:
+        continue
+    
+    try:
+        categoria = parts[3].strip()
+        cantidad = int(parts[5].strip())
+        precio_unitario = float(parts[6].strip())
+        
+        total_venta = cantidad * precio_unitario
+        
+        # Emitir: categoria \t total_venta \t 1 (contador para promediar)
+        if categoria:
+            print(f"{categoria}\t{total_venta:.2f}\t1")
+    except (ValueError, IndexError):
+        # Manejo defensivo: ignora líneas mal formadas sin truncar el job
+        continue
